@@ -1,0 +1,77 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.ipa.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+        # Configures IPA
+        - name: {{ .Chart.Name }}-init
+          image: "{{ .Values.ipa.image.repository }}:{{ .Values.ipa.image.tag }}"
+          imagePullPolicy: {{ .Values.ipa.image.pullPolicy }}
+          args:
+            - exit-on-finished
+{{- range $key, $value := .Values.ipa.init.args }}
+            - {{ $value }}
+{{- end }}
+          securityContext:
+            capabilities:
+              add:
+                - SYS_ADMIN
+          volumeMounts:
+            - name: ipaData
+              mountPath: /data
+            - name: cgroups
+              mountPath: /sys/fs/cgroup
+      containers:
+        # Runs IPA
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.ipa.image.repository }}:{{ .Values.ipa.image.tag }}"
+          imagePullPolicy: {{ .Values.ipa.image.pullPolicy }}
+          ports:
+{{- range $key, $value := .Values.ipa.service.ports }}
+            - containerPort: {{ $value.internalPort }}
+              protocol: {{ $value.protocol }}
+{{- end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+          resources:
+{{ toYaml .Values.ipa.resources | indent 12 }}
+          securityContext:
+            capabilities:
+              add:
+                - SYS_ADMIN
+          volumeMounts:
+            - name: ipaData
+              mountPath: /data
+            - name: cgroups
+              mountPath: /sys/fs/cgroup
+    {{- if .Values.ipa.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.ipa.nodeSelector | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: ipaData
+      {{- if .Values.ipa.persistentVolume.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ template "fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end -}}

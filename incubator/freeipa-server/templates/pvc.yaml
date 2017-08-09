@@ -1,0 +1,28 @@
+{{- if .Values.ipa.persistentVolume.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  {{- if .Values.ipa.persistentVolume.annotations }}
+  annotations:
+{{ toYaml .Values.ipa.persistentVolume.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    app: {{ template "fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  name: {{ template "fullname" . }}
+spec:
+  accessModes:
+{{ toYaml .Values.ipa.persistentVolume.accessModes | indent 4 }}
+{{- if .Values.ipa.persistentVolume.storageClass }}
+{{- if (eq "-" .Values.ipa.persistentVolume.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.ipa.persistentVolume.storageClass }}"
+{{- end }}
+{{- end }}
+  resources:
+    requests:
+      storage: "{{ .Values.ipa.persistentVolume.size }}"
+{{- end -}}
