@@ -1,0 +1,115 @@
+# Default values for freeipa-server.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+ipa:
+  replicaCount: 1
+  image:
+    repository: bradbeam/freeipa-server
+    tag: v0.0.7
+    pullPolicy: IfNotPresent
+  
+  init:
+    args:
+      - --hostname=ipa.default.svc.cluster.local
+#      - --debug
+      - --realm=CLUSTER.LOCAL
+      - --domain=cluster.local
+      - --ds-password=dspassword
+      - --admin-password=adminpass
+      - --ssh-trust-dns
+      - --unattended
+    
+  service:
+    name: ipa
+    type: ClusterIP
+    ports:
+      - name: dns-tcp
+        protocol: TCP
+        port: 53
+        targetPort: 53
+      - name: dns-udp
+        protocol: UDP
+        port: 53
+        targetPort: 53
+      - name: http
+        protocol: TCP
+        port: 80
+        targetPort: 80
+      - name: kerberos-tcp
+        protocol: TCP
+        port: 88
+        targetPort: 88
+      - name: kerberos-udp
+        protocol: UDP
+        port: 88
+        targetPort: 88
+      - name: ntp-udp
+        protocol: UDP
+        port: 123
+        targetPort: 123
+      - name: ldap
+        protocol: TCP
+        port: 389
+        targetPort: 389
+      - name: https
+        protocol: TCP
+        port: 443
+        targetPort: 443
+      - name: kpassword
+        protocol: TCP
+        port: 464
+        targetPort: 464
+      - name: ldaps
+        protocol: TCP
+        port: 636
+        targetPort: 636
+      - name: ldap-replication
+        protocol: TCP
+        port: 7389
+        targetPort: 7389
+      - name: ca-webui
+        protocol: TCP
+        port: 9443
+        targetPort: 9443
+      - name: ca-https
+        protocol: TCP
+        port: 9444
+        targetPort: 9444
+      - name: ca-admin
+        protocol: TCP
+        port: 9445
+        targetPort: 9445
+  
+  ingress:
+    enabled: false
+    # Used to create Ingress record (should used with service.type: ClusterIP).
+    hosts:
+      - chart-example.local
+    annotations:
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    tls:
+      # Secrets must be manually created in the namespace.
+      # - secretName: chart-example-tls
+      #   hosts:
+      #     - chart-example.local
+  
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious 
+    # choice for the user. This also increases chances charts run on environments with little 
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following 
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #  cpu: 100m
+    #  memory: 128Mi
+    #requests:
+    #  cpu: 100m
+    #  memory: 128Mi
+  
+  persistentVolume:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+    size: 2Gi
+    #storageClass: default

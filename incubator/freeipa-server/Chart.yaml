@@ -1,0 +1,12 @@
+apiVersion: v1
+description: A Helm chart for Kubernetes
+name: freeipa-server
+version: 0.1.0
+icon: https://www.freeipa.org/images/freeipa/freeipa-logo-small.png
+keywords:
+  - ipa
+  - freeipa
+  - auth
+  - ldap
+  - kerberos
+  - redhat

@@ -1,0 +1,61 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.ipa.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.ipa.image.repository }}:{{ .Values.ipa.image.tag }}"
+          imagePullPolicy: {{ .Values.ipa.image.pullPolicy }}
+          args:
+{{- range $key, $value := .Values.ipa.init.args }}
+            - {{ $value }}
+{{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: cgroups
+              mountPath: /sys/fs/cgroup
+              readOnly: true
+            - name: run
+              mountPath: /run
+            - name: run-sysd
+              mountPath: /run/systemd
+            - name: tmp
+              mountPath: /tmp
+    {{- if .Values.ipa.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.ipa.nodeSelector | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: data
+      {{- if .Values.ipa.persistentVolume.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ template "fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
+        - name: cgroups
+          hostPath:
+            path: /sys/fs/cgroup
+        - name: run
+          emptyDir: 
+            medium: Memory
+        - name: run-sysd
+          emptyDir: 
+            medium: Memory
+        - name: tmp
+          emptyDir: 
+            medium: Memory
