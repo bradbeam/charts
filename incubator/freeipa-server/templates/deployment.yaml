@@ -20,20 +20,39 @@ spec:
         - name: {{ .Chart.Name }}-init
           image: "{{ .Values.ipa.image.repository }}:{{ .Values.ipa.image.tag }}"
           imagePullPolicy: {{ .Values.ipa.image.pullPolicy }}
-          args:
-            - exit-on-finished
-{{- range $key, $value := .Values.ipa.init.args }}
-            - {{ $value }}
-{{- end }}
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: container
+            value: docker
           securityContext:
             capabilities:
               add:
                 - SYS_ADMIN
+          args:
+            - exit-on-finished
+#            - "--hostname={{ .Values.ipa.service.name }}.$(POD_NAMESPACE)"
+{{- range $key, $value := .Values.ipa.init.args }}
+            - {{ $value }}
+{{- end }}
           volumeMounts:
-            - name: ipaData
-              mountPath: /data
+       #     - name: data
+       #       mountPath: /data
             - name: cgroups
               mountPath: /sys/fs/cgroup
+              readOnly: true
+            - name: run
+              mountPath: /run
+            - name: run-sysd
+              mountPath: /run/systemd
+            - name: tmp
+              mountPath: /tmp
       containers:
         # Runs IPA
         - name: {{ .Chart.Name }}
@@ -41,37 +60,54 @@ spec:
           imagePullPolicy: {{ .Values.ipa.image.pullPolicy }}
           ports:
 {{- range $key, $value := .Values.ipa.service.ports }}
-            - containerPort: {{ $value.internalPort }}
+            - containerPort: {{ $value.targetPort }}
               protocol: {{ $value.protocol }}
 {{- end }}
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
+          #livenessProbe:
+          #  httpGet:
+          #    path: /
+          #    port: 80
+          #readinessProbe:
+          #  httpGet:
+          #    path: /
+          #    port: 80
           resources:
 {{ toYaml .Values.ipa.resources | indent 12 }}
-          securityContext:
-            capabilities:
-              add:
-                - SYS_ADMIN
+          #securityContext:
+          #  capabilities:
+          #    add:
+          #      - SYS_ADMIN
           volumeMounts:
-            - name: ipaData
+            - name: data
               mountPath: /data
             - name: cgroups
               mountPath: /sys/fs/cgroup
+              readOnly: true
+            - name: run
+              mountPath: /run
+            - name: tmp
+              mountPath: /tmp
     {{- if .Values.ipa.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.ipa.nodeSelector | indent 8 }}
     {{- end }}
       volumes:
-        - name: ipaData
+        - name: data
       {{- if .Values.ipa.persistentVolume.enabled }}
           persistentVolumeClaim:
             claimName: {{ template "fullname" . }}
       {{- else }}
           emptyDir: {}
-      {{- end -}}
+      {{- end }}
+        - name: cgroups
+          hostPath:
+            path: /sys/fs/cgroup
+        - name: run
+          emptyDir: {}
+#            medium: Memory
+        - name: run-sysd
+          emptyDir: {}
+#            medium: Memory
+        - name: tmp
+          emptyDir: {}
+#            medium: Memory

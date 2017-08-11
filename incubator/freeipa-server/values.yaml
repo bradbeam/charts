@@ -4,12 +4,14 @@
 ipa:
   replicaCount: 1
   image:
-    repository: freeipa/freeipa-server
-    tag: fedora-26
+    repository: bradbeam/freeipa-server
+    tag: v0.0.7
     pullPolicy: IfNotPresent
   
   init:
     args:
+      - --hostname=ipa.example.local
+      - --debug
       - --realm=EXAMPLE.LOCAL
       - --domain=example.local
       - --ds-password=dspassword
@@ -20,63 +22,64 @@ ipa:
       - --forwarder=8.8.8.8
       - --forwarder=8.8.4.4
       - --no-reverse
-      - --ip-address=172.17.0.2
+#      - --ip-address=172.17.0.2
     
   service:
+    name: ipa
     type: ClusterIP
     ports:
       - name: dns-tcp
         protocol: TCP
-        externalPort: 53
-        internalPort: 53
+        port: 53
+        targetPort: 53
       - name: dns-udp
         protocol: UDP
-        externalPort: 53
-        internalPort: 53
+        port: 53
+        targetPort: 53
       - name: http
         protocol: TCP
-        externalPort: 80
-        internalPort: 80
+        port: 80
+        targetPort: 80
       - name: kerberos-tcp
         protocol: TCP
-        externalPort: 88
-        internalPort: 88
+        port: 88
+        targetPort: 88
       - name: kerberos-udp
         protocol: UDP
-        externalPort: 88
-        internalPort: 88
+        port: 88
+        targetPort: 88
       - name: ntp-udp
         protocol: UDP
-        externalPort: 123
-        internalPort: 123
+        port: 123
+        targetPort: 123
       - name: ldap
         protocol: TCP
-        externalPort: 389
-        internalPort: 389
+        port: 389
+        targetPort: 389
       - name: kpassword
         protocol: TCP
-        externalPort: 464
-        internalPort: 464
+        port: 464
+        targetPort: 464
       - name: ldaps
         protocol: TCP
-        externalPort: 636
-        internalPort: 636
+        port: 636
+        targetPort: 636
       - name: ldap-replication
         protocol: TCP
-        externalPort: 7389
-        internalPort: 7389
+        port: 7389
+        targetPort: 7389
       - name: ca-webui
         protocol: TCP
-        externalPort: 9443
-        internalPort: 9443
+        port: 9443
+        targetPort: 9443
       - name: ca-https
         protocol: TCP
-        externalPort: 9444
-        internalPort: 9444
+        port: 9444
+        targetPort: 9444
       - name: ca-admin
         protocol: TCP
-        externalPort: 9445
-        internalPort: 9445
+        port: 9445
+        targetPort: 9445
   
   ingress:
     enabled: false
@@ -105,7 +108,7 @@ ipa:
     #  memory: 128Mi
   
   persistentVolume:
-    enabled: true
+    enabled: false
     accessModes:
       - ReadWriteOnce
     annotations: {}
