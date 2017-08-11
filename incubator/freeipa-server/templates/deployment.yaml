@@ -15,68 +15,14 @@ spec:
         app: {{ template "name" . }}
         release: {{ .Release.Name }}
     spec:
-      initContainers:
-        # Configures IPA
-        - name: {{ .Chart.Name }}-init
-          image: "{{ .Values.ipa.image.repository }}:{{ .Values.ipa.image.tag }}"
-          imagePullPolicy: {{ .Values.ipa.image.pullPolicy }}
-          env:
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: container
-            value: docker
-          securityContext:
-            capabilities:
-              add:
-                - SYS_ADMIN
-          args:
-            - exit-on-finished
-#            - "--hostname={{ .Values.ipa.service.name }}.$(POD_NAMESPACE)"
-{{- range $key, $value := .Values.ipa.init.args }}
-            - {{ $value }}
-{{- end }}
-          volumeMounts:
-       #     - name: data
-       #       mountPath: /data
-            - name: cgroups
-              mountPath: /sys/fs/cgroup
-              readOnly: true
-            - name: run
-              mountPath: /run
-            - name: run-sysd
-              mountPath: /run/systemd
-            - name: tmp
-              mountPath: /tmp
       containers:
-        # Runs IPA
         - name: {{ .Chart.Name }}
           image: "{{ .Values.ipa.image.repository }}:{{ .Values.ipa.image.tag }}"
           imagePullPolicy: {{ .Values.ipa.image.pullPolicy }}
-          ports:
-{{- range $key, $value := .Values.ipa.service.ports }}
-            - containerPort: {{ $value.targetPort }}
-              protocol: {{ $value.protocol }}
+          args:
+{{- range $key, $value := .Values.ipa.init.args }}
+            - {{ $value }}
 {{- end }}
-          #livenessProbe:
-          #  httpGet:
-          #    path: /
-          #    port: 80
-          #readinessProbe:
-          #  httpGet:
-          #    path: /
-          #    port: 80
-          resources:
-{{ toYaml .Values.ipa.resources | indent 12 }}
-          #securityContext:
-          #  capabilities:
-          #    add:
-          #      - SYS_ADMIN
           volumeMounts:
             - name: data
               mountPath: /data
@@ -85,6 +31,8 @@ spec:
               readOnly: true
             - name: run
               mountPath: /run
+            - name: run-sysd
+              mountPath: /run/systemd
             - name: tmp
               mountPath: /tmp
     {{- if .Values.ipa.nodeSelector }}
@@ -103,11 +51,11 @@ spec:
           hostPath:
             path: /sys/fs/cgroup
         - name: run
-          emptyDir: {}
-#            medium: Memory
+          emptyDir: 
+            medium: Memory
         - name: run-sysd
-          emptyDir: {}
-#            medium: Memory
+          emptyDir: 
+            medium: Memory
         - name: tmp
-          emptyDir: {}
-#            medium: Memory
+          emptyDir: 
+            medium: Memory

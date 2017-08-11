@@ -10,19 +10,14 @@ ipa:
   
   init:
     args:
-      - --hostname=ipa.example.local
-      - --debug
-      - --realm=EXAMPLE.LOCAL
-      - --domain=example.local
+      - --hostname=ipa.default.svc.cluster.local
+#      - --debug
+      - --realm=CLUSTER.LOCAL
+      - --domain=cluster.local
       - --ds-password=dspassword
       - --admin-password=adminpass
       - --ssh-trust-dns
       - --unattended
-      - --setup-dns
-      - --forwarder=8.8.8.8
-      - --forwarder=8.8.4.4
-      - --no-reverse
-#      - --ip-address=172.17.0.2
     
   service:
     name: ipa
@@ -56,6 +51,10 @@ ipa:
         protocol: TCP
         port: 389
         targetPort: 389
+      - name: https
+        protocol: TCP
+        port: 443
+        targetPort: 443
       - name: kpassword
         protocol: TCP
         port: 464
@@ -108,9 +107,9 @@ ipa:
     #  memory: 128Mi
   
   persistentVolume:
-    enabled: false
+    enabled: true
     accessModes:
       - ReadWriteOnce
     annotations: {}
     size: 2Gi
-    storageClass: default
+    #storageClass: default
